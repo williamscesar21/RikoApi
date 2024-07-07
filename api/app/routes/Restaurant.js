@@ -10,7 +10,7 @@ const {
     eliminarRestaurante,
     actualizarEstatusRestaurante,
     rateRestaurant
-} = require('../controllers/restaurant');
+} = require('../controllers/Restaurant');
 
 router.post('/restaurant', registrarRestaurante);
 router.get('/restaurants', obtenerRestaurantes);
