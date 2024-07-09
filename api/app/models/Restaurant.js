@@ -54,7 +54,8 @@ const restaurantSchema = new Schema({
                 } else {
                     return 0;
                 }
-            }}
+            }},
+        required: false
     },
     logo: {
         filename: String,
@@ -90,12 +91,12 @@ const restaurantSchema = new Schema({
         tipo: {
             type: String,
             enum: ['Producto', 'Combo'],
-            required: true
+            required: false
         },
         item: {
             type: Schema.Types.ObjectId,
             refPath: 'menu.tipo',
-            required: true
+            required: false
         }
     }],
     estatus: {
