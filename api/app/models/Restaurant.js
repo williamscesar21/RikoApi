@@ -54,8 +54,7 @@ const restaurantSchema = new Schema({
                 } else {
                     return 0;
                 }
-            }},
-        required: false
+            }}
     },
     logo: {
         filename: String,
