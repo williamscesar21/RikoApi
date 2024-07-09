@@ -90,13 +90,11 @@ const restaurantSchema = new Schema({
     menu: [{
         tipo: {
             type: String,
-            enum: ['Producto', 'Combo'],
-            required: false
+            enum: ['Producto', 'Combo']
         },
         item: {
             type: Schema.Types.ObjectId,
-            refPath: 'menu.tipo',
-            required: false
+            refPath: 'menu.tipo'
         }
     }],
     estatus: {
