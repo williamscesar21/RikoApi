@@ -17,21 +17,29 @@ const registrarRestaurante = async (req, res) => {
             }
 
             // Extraer los datos del cuerpo de la solicitud y los archivos subidos
-            const { nombre, descripcion, ubicacion, telefono, email, password } = req.body;
+            const { nombre, descripcion, ubicacion, telefono, email, password, inicio, fin, calificacion, estatus, suspendido } = req.body;
             const { logo, foto_establecimiento } = req.file ? req.file : {};
 
             // Extraer y parsear el horario de trabajo del cuerpo de la solicitud
-            const horario_de_trabajo = JSON.parse(req.body.horario_de_trabajo);
-
-            // Construir los horarios de trabajo como objetos del tipo horarioSchema
-            const horarios = horario_de_trabajo.map(item => ({
-                dia: item.dia,
-                inicio: item.inicio,
-                fin: item.fin
-            }));
+            const horario_de_trabajo = req.body.horario_de_trabajo;
+            let horarios = [];
+            
+            if (typeof horario_de_trabajo === 'string') {
+                horarios = JSON.parse(horario_de_trabajo).map(item => ({
+                    dia: item.dia,
+                    inicio: item.inicio,
+                    fin: item.fin
+                }));
+            } else {
+                horarios = horario_de_trabajo.map(item => ({
+                    dia: item.dia,
+                    inicio: item.inicio,
+                    fin: item.fin
+                }));
+            }
 
             // Validar que todos los campos necesarios estén presentes
-            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password) {
+            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || !inicio || !fin || !calificacion || !estatus || suspendido === undefined) {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
@@ -44,8 +52,13 @@ const registrarRestaurante = async (req, res) => {
                 telefono,
                 email,
                 password,
+                inicio,
+                fin,
                 logo: logo ? { filename: logo.filename, contentType: logo.mimetype } : undefined,
-                foto_establecimiento: foto_establecimiento ? { filename: foto_establecimiento.filename, contentType: foto_establecimiento.mimetype } : undefined
+                foto_establecimiento: foto_establecimiento ? { filename: foto_establecimiento.filename, contentType: foto_establecimiento.mimetype } : undefined,
+                calificacion,
+                estatus,
+                suspendido
             });
 
             // Guardar el restaurante en la base de datos
@@ -58,6 +71,7 @@ const registrarRestaurante = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 };
+
 
 // EL JSON PARA CREAR RESTAURANTE ES DE LA SIGUIENTE FORMA:
 // {
