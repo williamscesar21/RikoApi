@@ -2,7 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const Restaurant = require('./models/Restaurant');
+const Restaurant = require('../models/Restaurant');
 
 // Controlador para registrar un restaurante
 // Función para generar un nombre único para el archivo
