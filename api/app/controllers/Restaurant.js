@@ -54,8 +54,8 @@ const registrarRestaurante = async (req, res) => {
                 password: await Restaurant.encryptPassword(password),
                 inicio,
                 fin,
-                logo: logo ? { filename: logo.filename, contentType: logo.mimetype } : undefined,
-                foto_establecimiento: foto_establecimiento ? { filename: foto_establecimiento.filename, contentType: foto_establecimiento.mimetype } : undefined,
+                logo: { filename: logo.filename, contentType: logo.mimetype },
+                foto_establecimiento: { filename: foto_establecimiento.filename, contentType: foto_establecimiento.mimetype },
                 calificacion,
                 estatus,
                 suspendido
