@@ -1,27 +1,69 @@
 // ../controllers/restaurant.js
-const Restaurant = require('../models/Restaurant');
+const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
-const multerMiddleware = require('../middlewares/multerMiddleware');
+const Restaurant = require('./models/Restaurant');
 
 // Controlador para registrar un restaurante
-const registrarRestaurante = async (req, res) => {
-    try {
-        // Middleware de Multer para subir los archivos de imagen (logo y foto del establecimiento)
-        multerMiddleware(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
-                // Un error de Multer ocurrió durante la carga
-                return res.status(400).json({ error: err.message });
-            } else if (err) {
-                // Otro tipo de error ocurrió
-                return res.status(500).json({ error: err.message });
-            }
+// Función para generar un nombre único para el archivo
+const generarNombreArchivo = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return `${timestamp}-${random}`;
+};
 
+// Configuración de almacenamiento de Multer
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        // Define el directorio donde se guardarán los archivos
+        const uploadDir = path.join(__dirname, '../uploads/');
+        
+        // Verificar si el directorio existe, si no, crearlo
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+        
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        // Generar un nombre único para el archivo
+        const nombreArchivo = generarNombreArchivo();
+        cb(null, nombreArchivo + path.extname(file.originalname));
+    }
+});
+
+// Middleware de Multer
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        // Limita el tamaño del archivo a 5MB
+        fileSize: 1024 * 1024 * 5 
+    },
+    fileFilter: function (req, file, cb) {
+        // Solo acepta archivos de imagen
+        if (file.mimetype.startsWith('image')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten archivos de imagen'));
+        }
+    }
+}).single('images'); // Asegúrate de que el nombre del campo coincida con el del formulario
+
+const registrarRestaurante = async (req, res) => {
+    upload(req, res, async (err) => {
+        if (err instanceof multer.MulterError) {
+            // Un error de Multer ocurrió durante la carga
+            return res.status(400).json({ error: err.message });
+        } else if (err) {
+            // Otro tipo de error ocurrió
+            return res.status(500).json({ error: err.message });
+        }
+
+        try {
             // Extraer los datos del cuerpo de la solicitud y los archivos subidos
-            const { nombre, descripcion, ubicacion, telefono, email, password, inicio, fin, calificacion, estatus, suspendido } = req.body;
-            const { logo, foto_establecimiento } = req.file ? req.file : {};
+            const { nombre, descripcion, ubicacion, telefono, email, password, calificacion, estatus, suspendido, horario_de_trabajo } = req.body;
 
             // Extraer y parsear el horario de trabajo del cuerpo de la solicitud
-            const horario_de_trabajo = req.body.horario_de_trabajo;
             let horarios = [];
             
             if (typeof horario_de_trabajo === 'string') {
@@ -39,7 +81,7 @@ const registrarRestaurante = async (req, res) => {
             }
 
             // Validar que todos los campos necesarios estén presentes
-            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || !inicio || !fin || !calificacion || !estatus || suspendido === undefined) {
+            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || !calificacion || !estatus || suspendido === undefined) {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
@@ -52,11 +94,14 @@ const registrarRestaurante = async (req, res) => {
                 telefono,
                 email,
                 password: await Restaurant.encryptPassword(password),
-                inicio,
-                fin,
-                logo: { filename: logo.filename, contentType: logo.mimetype },
-                foto_establecimiento: { filename: foto_establecimiento.filename, contentType: foto_establecimiento.mimetype },
-                calificacion,
+                images: req.file ? [{ 
+                    filename: req.file.filename, 
+                    contentType: req.file.mimetype 
+                }] : [],
+                calificacion: {
+                    calificaciones: calificacion,
+                    promedio: calificacion.reduce((a, b) => a + b) / calificacion.length
+                },
                 estatus,
                 suspendido
             });
@@ -65,11 +110,10 @@ const registrarRestaurante = async (req, res) => {
             await restaurante.save();
 
             return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
-        });
-
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
+        } catch (error) {
+            return res.status(500).json({ error: error.message });
+        }
+    });
 };
 
 

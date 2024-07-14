@@ -56,10 +56,10 @@ const restaurantSchema = new Schema({
                 }
             }}
     },
-    logo: {
+    images: [{
         filename: String,
         contentType: String
-    },
+    }],
     ubicacion: {
         type: String,
         required: true,
@@ -155,10 +155,6 @@ const restaurantSchema = new Schema({
             },
             message: 'Contraseña debe presentar minimo 8 caracteres, una letra mayúscula, una letra minúscula, un caracter especial y un dígito',
         }
-    },
-    foto_establecimiento: {
-        filename: String,
-        contentType: String
     },
     suspendido: {
         type: Boolean,
