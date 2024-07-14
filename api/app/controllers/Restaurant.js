@@ -4,7 +4,6 @@ const fs = require('fs');
 const multer = require('multer');
 const Restaurant = require('../models/Restaurant');
 
-// Controlador para registrar un restaurante
 // Función para generar un nombre único para el archivo
 const generarNombreArchivo = () => {
     const timestamp = Date.now();
@@ -94,10 +93,10 @@ const registrarRestaurante = async (req, res) => {
                 telefono,
                 email,
                 password: await Restaurant.encryptPassword(password),
-                images: req.file ? [{ 
+                images: [{ 
                     filename: req.file.filename, 
                     contentType: req.file.mimetype 
-                }] : [],
+                }],
                 calificacion,
                 estatus,
                 suspendido
@@ -113,53 +112,6 @@ const registrarRestaurante = async (req, res) => {
     });
 };
 
-
-// EL JSON PARA CREAR RESTAURANTE ES DE LA SIGUIENTE FORMA:
-// {
-//     "nombre": "Jorge",
-//     "apellido": "Perez",
-//     "email": "jorge@perez",
-//     "password": "123456",
-//     "telefono": "1234567890",
-//     "location": "40.7128,-74.0060",
-//     "horario_de_trabajo": [
-//         {
-//             "dia": "Lunes",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Martes",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Miercoles",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },   
-//         {
-//             "dia": "Jueves",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Viernes",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Sabado",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Domingo",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         }
-//     ]
-// }
 
 
 const obtenerRestaurantes = async (req, res) => {
