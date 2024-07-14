@@ -98,10 +98,7 @@ const registrarRestaurante = async (req, res) => {
                     filename: req.file.filename, 
                     contentType: req.file.mimetype 
                 }] : [],
-                calificacion: {
-                    calificaciones: calificacion,
-                    promedio: calificacion.reduce((a, b) => a + b) / calificacion.length
-                },
+                calificacion,
                 estatus,
                 suspendido
             });
