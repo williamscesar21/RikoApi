@@ -26,7 +26,7 @@ router.post('/restaurant-calificar/:restaurantId', rateRestaurant);
 router.post('/restaurant-login', login);
 
 // Ruta para servir imágenes estáticas desde la carpeta de uploads
-router.use('/uploads', express.static(path.join(__dirname, '../app/uploads')));
+router.use('/uploads', express.static('../app/uploads'));
 
 // Ruta para listar todos los archivos subidos en la carpeta de uploads
 router.get('/uploads/list', (req, res) => {
