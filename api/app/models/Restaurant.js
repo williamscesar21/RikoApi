@@ -144,16 +144,16 @@ const restaurantSchema = new Schema({
             message: 'Email inválido',
         },
     },
-    password: {
+    password:{
         type: String,
-        maxLength: [50, 'La contraseña no puede superar los 50 caracteres'],
-        minLength: [6, 'La contraseña no puede ser menor de 6 caracteres'],
+        maxLenght: [50, 'La contraseña no puede superar los 50 caracteres'],
+        minLenght: [6, 'La contraseña no puede ser menor de 6 caracteres'],
         required: true,
-        validate: {
+        validate: { //Validación de la clave para que contenga mínimo 8 caracatéres, una letra mayúscula, una letra minúscula, y un caracter especial.
             validator: function (value) {
-                return /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/.test(value);
+              return /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-]).{8,}$/.test(value);
             },
-            message: 'La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una letra minúscula, un carácter especial y un dígito',
+            message: 'Contraseña debe presentar minimo 8 caracteres, una letra mayúscula, una letra minúscula, un caracter especial y un dígito',
         }
     },
     foto_establecimiento: {
