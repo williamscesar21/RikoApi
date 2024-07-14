@@ -51,7 +51,7 @@ const registrarRestaurante = async (req, res) => {
                 horario_de_trabajo: horarios,
                 telefono,
                 email,
-                password,
+                password: await Restaurant.encryptPassword(password),
                 inicio,
                 fin,
                 logo: logo ? { filename: logo.filename, contentType: logo.mimetype } : undefined,
