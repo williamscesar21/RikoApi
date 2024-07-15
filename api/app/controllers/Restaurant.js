@@ -5,7 +5,7 @@ const Restaurant = require('../models/Restaurant');
 const admin = require('firebase-admin');
 
 // Inicializar Firebase Admin SDK
-const serviceAccount = require('../../config/google-services.json'); // Asegúrate de colocar el path correcto
+const serviceAccount = require('../../config/com-riko-customer-firebase-adminsdk-x4926-3c1239aef0.json'); // Asegúrate de colocar el path correcto
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
