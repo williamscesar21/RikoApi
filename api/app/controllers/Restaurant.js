@@ -11,7 +11,7 @@ admin.initializeApp({
 
 const bucket = admin.storage().bucket();
 
-const storage = multer.memoryStorage(); // Almacenar en memoria para subir directamente a Firebase
+const storage = multer.memoryStorage(); 
 const upload = multer({ 
     storage: storage,
     limits: { fileSize: 1024 * 1024 * 5 },
@@ -33,7 +33,7 @@ const registrarRestaurante = async (req, res) => {
         }
 
         try {
-            const { nombre, descripcion, ubicacion, telefono, email, password, calificacion, estatus, suspendido, horario_de_trabajo } = req.body;
+            const { nombre, descripcion, ubicacion, telefono, email, password, suspendido, horario_de_trabajo } = req.body;
 
             let horarios = [];
             if (typeof horario_de_trabajo === 'string') {
@@ -50,7 +50,7 @@ const registrarRestaurante = async (req, res) => {
                 }));
             }
 
-            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || !calificacion || !estatus || suspendido === undefined) {
+            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password  || suspendido === undefined) {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
@@ -82,8 +82,6 @@ const registrarRestaurante = async (req, res) => {
                         contentType: req.file.mimetype,
                         url: publicUrl
                     }],
-                    calificacion,
-                    estatus,
                     suspendido
                 });
 
