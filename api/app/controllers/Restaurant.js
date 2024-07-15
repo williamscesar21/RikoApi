@@ -1,8 +1,18 @@
-// ../controllers/restaurant.js
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const Restaurant = require('../models/Restaurant');
+const admin = require('firebase-admin');
+
+// Inicializar Firebase Admin SDK
+const serviceAccount = require('../../config/google-services.json'); // Asegúrate de colocar el path correcto
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: 'com-riko-customer.appspot.com' // Reemplaza 'your-project-id' con tu ID de proyecto
+});
+
+const bucket = admin.storage().bucket();
 
 // Función para generar un nombre único para el archivo
 const generarNombreArchivo = () => {
@@ -12,34 +22,15 @@ const generarNombreArchivo = () => {
 };
 
 // Configuración de almacenamiento de Multer
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        // Define el directorio donde se guardarán los archivos
-        const uploadDir = path.join(__dirname, '../uploads/');
-        
-        // Verificar si el directorio existe, si no, crearlo
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
-        }
-        
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        // Generar un nombre único para el archivo
-        const nombreArchivo = generarNombreArchivo();
-        cb(null, nombreArchivo + path.extname(file.originalname));
-    }
-});
+const storage = multer.memoryStorage(); // Usamos memoria en vez de disco
 
 // Middleware de Multer
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: {
-        // Limita el tamaño del archivo a 5MB
-        fileSize: 1024 * 1024 * 5 
+        fileSize: 1024 * 1024 * 5 // Limita el tamaño del archivo a 5MB
     },
     fileFilter: function (req, file, cb) {
-        // Solo acepta archivos de imagen
         if (file.mimetype.startsWith('image')) {
             cb(null, true);
         } else {
@@ -48,23 +39,47 @@ const upload = multer({
     }
 }).single('images'); // Asegúrate de que el nombre del campo coincida con el del formulario
 
+const subirArchivoAFirebase = async (file) => {
+    const nombreArchivo = generarNombreArchivo() + path.extname(file.originalname);
+    const fileUpload = bucket.file(nombreArchivo);
+
+    const blobStream = fileUpload.createWriteStream({
+        metadata: {
+            contentType: file.mimetype,
+        },
+    });
+
+    return new Promise((resolve, reject) => {
+        blobStream.on('error', (error) => {
+            reject(error);
+        });
+
+        blobStream.on('finish', () => {
+            fileUpload.getSignedUrl({
+                action: 'read',
+                expires: '03-09-2491'
+            }).then((urls) => {
+                resolve(urls[0]);
+            }).catch(reject);
+        });
+
+        blobStream.end(file.buffer);
+    });
+};
+
 const registrarRestaurante = async (req, res) => {
     upload(req, res, async (err) => {
         if (err instanceof multer.MulterError) {
-            // Un error de Multer ocurrió durante la carga
             return res.status(400).json({ error: err.message });
         } else if (err) {
-            // Otro tipo de error ocurrió
             return res.status(500).json({ error: err.message });
         }
 
         try {
-            // Extraer los datos del cuerpo de la solicitud y los archivos subidos
             const { nombre, descripcion, ubicacion, telefono, email, password, calificacion, estatus, suspendido, horario_de_trabajo } = req.body;
 
-            // Extraer y parsear el horario de trabajo del cuerpo de la solicitud
             let horarios = [];
-            
+
             if (typeof horario_de_trabajo === 'string') {
                 horarios = JSON.parse(horario_de_trabajo).map(item => ({
                     dia: item.dia,
@@ -79,12 +94,12 @@ const registrarRestaurante = async (req, res) => {
                 }));
             }
 
-            // Validar que todos los campos necesarios estén presentes
             if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || !calificacion || !estatus || suspendido === undefined) {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
-            // Crear una instancia del restaurante con los datos proporcionados
+            const imageUrl = await subirArchivoAFirebase(req.file);
+
             const restaurante = new Restaurant({
                 nombre,
                 descripcion,
@@ -94,15 +109,14 @@ const registrarRestaurante = async (req, res) => {
                 email,
                 password: await Restaurant.encryptPassword(password),
                 images: [{ 
-                    filename: req.file.filename, 
-                    contentType: req.file.mimetype 
+                    filename: req.file.originalname, 
+                    url: imageUrl
                 }],
                 calificacion,
                 estatus,
                 suspendido
             });
 
-            // Guardar el restaurante en la base de datos
             await restaurante.save();
 
             return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
@@ -111,8 +125,6 @@ const registrarRestaurante = async (req, res) => {
         }
     });
 };
-
-
 
 const obtenerRestaurantes = async (req, res) => {
     try {
@@ -184,20 +196,16 @@ const rateRestaurant = async (req, res) => {
     }
 
     try {
-        // Buscar el restaurante por ID
         const restaurant = await Restaurant.findById(restaurantId);
 
         if (!restaurant) {
             return res.status(404).json({ message: "Restaurante no encontrado" });
         }
 
-        // Añadir la nueva calificación
         restaurant.calificacion.calificaciones.push(rating);
 
-        // Calcular el nuevo promedio
         restaurant.calificacion.promedio = restaurant.calificacion.calificaciones.reduce((a, b) => a + b, 0) / restaurant.calificacion.calificaciones.length;
 
-        // Guardar el Restaurante actualizado
         await restaurant.save();
 
         res.json(restaurant);
@@ -205,7 +213,6 @@ const rateRestaurant = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 
 module.exports = {
     registrarRestaurante,

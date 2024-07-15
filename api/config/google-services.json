@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "171871412227",
+    "project_id": "com-riko-customer",
+    "storage_bucket": "com-riko-customer.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:171871412227:android:99e83c9c8998464f212e36",
+        "android_client_info": {
+          "package_name": "com.riko.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8dxCrzfIfCiIwOJNJAoFLx6iSftKDu6g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
