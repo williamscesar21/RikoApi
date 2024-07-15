@@ -51,7 +51,7 @@ const registrarRestaurante = async (req, res) => {
             }
 
             if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password  || suspendido === undefined) {
-                return res.status(400).json({ error: 'Todos los campos son requeridos' });
+                return res.status(400).json({ error: error.message });
             }
 
             // Subir archivo a Firebase Storage
