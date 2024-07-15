@@ -1,71 +1,28 @@
-const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
 const Restaurant = require('../models/Restaurant');
+const path = require('path');
 const admin = require('firebase-admin');
-
-// Inicializar Firebase Admin SDK
-const serviceAccount = require('../../config/com-riko-customer-firebase-adminsdk-x4926-3c1239aef0.json'); // Asegúrate de colocar el path correcto
+const serviceAccount = require('../../config/com-riko-customer-firebase-adminsdk-x4926-3c1239aef0.json');
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: 'com-riko-customer.appspot.com' // Reemplaza 'your-project-id' con tu ID de proyecto
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: 'com-riko-customer.appspot.com'
 });
 
 const bucket = admin.storage().bucket();
 
-// Función para generar un nombre único para el archivo
-const generarNombreArchivo = () => {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000);
-    return `${timestamp}-${random}`;
-};
-
-// Configuración de almacenamiento de Multer
-const storage = multer.memoryStorage(); // Usamos memoria en vez de disco
-
-// Middleware de Multer
-const upload = multer({
+const storage = multer.memoryStorage(); // Almacenar en memoria para subir directamente a Firebase
+const upload = multer({ 
     storage: storage,
-    limits: {
-        fileSize: 1024 * 1024 * 5 // Limita el tamaño del archivo a 5MB
-    },
-    fileFilter: function (req, file, cb) {
-        if (file.mimetype.startsWith('image')) {
+    limits: { fileSize: 1024 * 1024 * 5 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Solo se permiten archivos de imagen'));
+            cb(new Error('Solo se permiten archivos de imagen'), false);
         }
     }
-}).single('images'); // Asegúrate de que el nombre del campo coincida con el del formulario
-
-const subirArchivoAFirebase = async (file) => {
-    const nombreArchivo = generarNombreArchivo() + path.extname(file.originalname);
-    const fileUpload = bucket.file(nombreArchivo);
-
-    const blobStream = fileUpload.createWriteStream({
-        metadata: {
-            contentType: file.mimetype,
-        },
-    });
-
-    return new Promise((resolve, reject) => {
-        blobStream.on('error', (error) => {
-            reject(error);
-        });
-
-        blobStream.on('finish', () => {
-            fileUpload.getSignedUrl({
-                action: 'read',
-                expires: '03-09-2491'
-            }).then((urls) => {
-                resolve(urls[0]);
-            }).catch(reject);
-        });
-
-        blobStream.end(file.buffer);
-    });
-};
+}).single('images');
 
 const registrarRestaurante = async (req, res) => {
     upload(req, res, async (err) => {
@@ -79,7 +36,6 @@ const registrarRestaurante = async (req, res) => {
             const { nombre, descripcion, ubicacion, telefono, email, password, calificacion, estatus, suspendido, horario_de_trabajo } = req.body;
 
             let horarios = [];
-
             if (typeof horario_de_trabajo === 'string') {
                 horarios = JSON.parse(horario_de_trabajo).map(item => ({
                     dia: item.dia,
@@ -98,28 +54,45 @@ const registrarRestaurante = async (req, res) => {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
-            const imageUrl = await subirArchivoAFirebase(req.file);
-
-            const restaurante = new Restaurant({
-                nombre,
-                descripcion,
-                ubicacion,
-                horario_de_trabajo: horarios,
-                telefono,
-                email,
-                password: await Restaurant.encryptPassword(password),
-                images: [{ 
-                    filename: req.file.originalname, 
-                    url: imageUrl
-                }],
-                calificacion,
-                estatus,
-                suspendido
+            // Subir archivo a Firebase Storage
+            const blob = bucket.file(`${Date.now()}_${req.file.originalname}`);
+            const blobStream = blob.createWriteStream({
+                metadata: {
+                    contentType: req.file.mimetype
+                }
             });
 
-            await restaurante.save();
+            blobStream.on('error', (error) => {
+                return res.status(500).json({ error: error.message });
+            });
 
-            return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
+            blobStream.on('finish', async () => {
+                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+
+                const restaurante = new Restaurant({
+                    nombre,
+                    descripcion,
+                    ubicacion,
+                    horario_de_trabajo: horarios,
+                    telefono,
+                    email,
+                    password: await Restaurant.encryptPassword(password),
+                    images: [{ 
+                        filename: blob.name, 
+                        contentType: req.file.mimetype,
+                        url: publicUrl
+                    }],
+                    calificacion,
+                    estatus,
+                    suspendido
+                });
+
+                await restaurante.save();
+                return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
+            });
+
+            blobStream.end(req.file.buffer);
+
         } catch (error) {
             return res.status(500).json({ error: error.message });
         }
