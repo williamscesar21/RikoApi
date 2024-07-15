@@ -1,18 +1,24 @@
 const multer = require('multer');
 const Restaurant = require('../models/Restaurant');
 const path = require('path');
-const admin = require('firebase-admin');
-const serviceAccount = require('../../config/com-riko-customer-firebase-adminsdk-x4926-3c1239aef0.json');
+const { google } = require('googleapis');
+const fs = require('fs');
+const { promisify } = require('util');
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'com-riko-customer.appspot.com'
+// Cargar las credenciales de la cuenta de servicio de Google Drive
+const credentials = require('../../config/primal-chariot-429516-n4-aae5e6c89dfc.json');
+
+// Crear un cliente OAuth2 para autorización
+const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
 });
 
-const bucket = admin.storage().bucket();
+// Crear una instancia del cliente de Google Drive
+const drive = google.drive({ version: 'v3', auth });
 
-const storage = multer.memoryStorage(); 
-const upload = multer({ 
+const storage = multer.memoryStorage();
+const upload = multer({
     storage: storage,
     limits: { fileSize: 1024 * 1024 * 5 },
     fileFilter: (req, file, cb) => {
@@ -50,47 +56,50 @@ const registrarRestaurante = async (req, res) => {
                 }));
             }
 
-            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password  || suspendido === undefined) {
-                return res.status(400).json({ error: error.message });
+            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || suspendido === undefined) {
+                return res.status(400).json({ error: 'Faltan datos requeridos' });
             }
 
-            // Subir archivo a Firebase Storage
-            const blob = bucket.file(`${Date.now()}_${req.file.originalname}`);
-            const blobStream = blob.createWriteStream({
-                metadata: {
-                    contentType: req.file.mimetype
-                }
+            // Subir archivo a Google Drive
+            const fileMetadata = {
+                name: `${Date.now()}_${req.file.originalname}`,
+                mimeType: req.file.mimetype
+            };
+
+            const media = {
+                mimeType: req.file.mimetype,
+                body: req.file.buffer
+            };
+
+            const driveResponse = await drive.files.create({
+                resource: fileMetadata,
+                media: media,
+                fields: 'id'
             });
 
-            blobStream.on('error', (error) => {
-                return res.status(500).json({ error: error.message });
+            const fileId = driveResponse.data.id;
+
+            const fileUrl = `https://drive.google.com/uc?id=${fileId}`;
+
+            const restaurante = new Restaurant({
+                nombre,
+                descripcion,
+                ubicacion,
+                horario_de_trabajo: horarios,
+                telefono,
+                email,
+                password: await Restaurant.encryptPassword(password),
+                images: [{
+                    filename: fileMetadata.name,
+                    contentType: req.file.mimetype,
+                    url: fileUrl
+                }],
+                suspendido
             });
 
-            blobStream.on('finish', async () => {
-                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+            await restaurante.save();
 
-                const restaurante = new Restaurant({
-                    nombre,
-                    descripcion,
-                    ubicacion,
-                    horario_de_trabajo: horarios,
-                    telefono,
-                    email,
-                    password: await Restaurant.encryptPassword(password),
-                    images: [{ 
-                        filename: blob.name, 
-                        contentType: req.file.mimetype,
-                        url: publicUrl
-                    }],
-                    suspendido
-                });
-
-                await restaurante.save();
-                return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
-            });
-
-            blobStream.end(req.file.buffer);
-
+            return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
         } catch (error) {
             return res.status(500).json({ error: error.message });
         }
