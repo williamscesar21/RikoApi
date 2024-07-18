@@ -1,86 +1,41 @@
-const multer = require('multer');
+// ../controllers/restaurant.js
 const Restaurant = require('../models/Restaurant');
-const path = require('path');
-const { google } = require('googleapis');
-const fs = require('fs');
-const { promisify } = require('util');
+const multer = require('multer');
+const multerMiddleware = require('../middlewares/multerMiddleware');
 
-// Cargar las credenciales de la cuenta de servicio de Google Drive
-const credentials = require('../../config/primal-chariot-429516-n4-aae5e6c89dfc.json');
-
-// Crear un cliente OAuth2 para autorización
-const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
-});
-
-// Crear una instancia del cliente de Google Drive
-const drive = google.drive({ version: 'v3', auth });
-
-const storage = multer.memoryStorage();
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 1024 * 1024 * 5 },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Solo se permiten archivos de imagen'), false);
-        }
-    }
-}).single('images');
-
+// Controlador para registrar un restaurante
 const registrarRestaurante = async (req, res) => {
-    upload(req, res, async (err) => {
-        if (err instanceof multer.MulterError) {
-            return res.status(400).json({ error: err.message });
-        } else if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-
-        try {
-            const { nombre, descripcion, ubicacion, telefono, email, password, suspendido, horario_de_trabajo } = req.body;
-
-            let horarios = [];
-            if (typeof horario_de_trabajo === 'string') {
-                horarios = JSON.parse(horario_de_trabajo).map(item => ({
-                    dia: item.dia,
-                    inicio: item.inicio,
-                    fin: item.fin
-                }));
-            } else {
-                horarios = horario_de_trabajo.map(item => ({
-                    dia: item.dia,
-                    inicio: item.inicio,
-                    fin: item.fin
-                }));
+    try {
+        // Middleware de Multer para subir los archivos de imagen (logo y foto del establecimiento)
+        multerMiddleware(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                // Un error de Multer ocurrió durante la carga
+                return res.status(400).json({ error: err.message });
+            } else if (err) {
+                // Otro tipo de error ocurrió
+                return res.status(500).json({ error: err.message });
             }
 
-            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || suspendido === undefined) {
-                return res.status(400).json({ error: 'Faltan datos requeridos' });
+            // Extraer los datos del cuerpo de la solicitud y los archivos subidos
+            const { nombre, descripcion, ubicacion, telefono, email, password } = req.body;
+            const { logo, foto_establecimiento } = req.file ? req.file : {};
+
+            // Extraer y parsear el horario de trabajo del cuerpo de la solicitud
+            const horario_de_trabajo = JSON.parse(req.body.horario_de_trabajo);
+
+            // Construir los horarios de trabajo como objetos del tipo horarioSchema
+            const horarios = horario_de_trabajo.map(item => ({
+                dia: item.dia,
+                inicio: item.inicio,
+                fin: item.fin
+            }));
+
+            // Validar que todos los campos necesarios estén presentes
+            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password) {
+                return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
-            // Subir archivo a Google Drive
-            const fileMetadata = {
-                name: `${Date.now()}_${req.file.originalname}`,
-                mimeType: req.file.mimetype
-            };
-
-            const media = {
-                mimeType: req.file.mimetype,
-                body: req.file.buffer
-            };
-
-            const driveResponse = await drive.files.create({
-                resource: fileMetadata,
-                media: media,
-                fields: 'id'
-            });
-
-            const fileId = driveResponse.data.id;
-
-            const fileUrl = `https://drive.google.com/uc?id=${fileId}`;
-
+            // Crear una instancia del restaurante con los datos proporcionados
             const restaurante = new Restaurant({
                 nombre,
                 descripcion,
@@ -88,23 +43,69 @@ const registrarRestaurante = async (req, res) => {
                 horario_de_trabajo: horarios,
                 telefono,
                 email,
-                password: await Restaurant.encryptPassword(password),
-                images: [{
-                    filename: fileMetadata.name,
-                    contentType: req.file.mimetype,
-                    url: fileUrl
-                }],
-                suspendido
+                password,
+                logo: logo ? { filename: logo.filename, contentType: logo.mimetype } : undefined,
+                foto_establecimiento: foto_establecimiento ? { filename: foto_establecimiento.filename, contentType: foto_establecimiento.mimetype } : undefined
             });
 
+            // Guardar el restaurante en la base de datos
             await restaurante.save();
 
             return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
-        }
-    });
+        });
+
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
 };
+
+// EL JSON PARA CREAR RESTAURANTE ES DE LA SIGUIENTE FORMA:
+// {
+//     "nombre": "Jorge",
+//     "apellido": "Perez",
+//     "email": "jorge@perez",
+//     "password": "123456",
+//     "telefono": "1234567890",
+//     "location": "40.7128,-74.0060",
+//     "horario_de_trabajo": [
+//         {
+//             "dia": "Lunes",
+//             "inicio": "10:00:00",
+//             "fin": "22:00:00"
+//         },
+//         {
+//             "dia": "Martes",
+//             "inicio": "10:00:00",
+//             "fin": "22:00:00"
+//         },
+//         {
+//             "dia": "Miercoles",
+//             "inicio": "10:00:00",
+//             "fin": "22:00:00"
+//         },   
+//         {
+//             "dia": "Jueves",
+//             "inicio": "10:00:00",
+//             "fin": "22:00:00"
+//         },
+//         {
+//             "dia": "Viernes",
+//             "inicio": "10:00:00",
+//             "fin": "22:00:00"
+//         },
+//         {
+//             "dia": "Sabado",
+//             "inicio": "10:00:00",
+//             "fin": "22:00:00"
+//         },
+//         {
+//             "dia": "Domingo",
+//             "inicio": "10:00:00",
+//             "fin": "22:00:00"
+//         }
+//     ]
+// }
+
 
 const obtenerRestaurantes = async (req, res) => {
     try {
@@ -176,16 +177,20 @@ const rateRestaurant = async (req, res) => {
     }
 
     try {
+        // Buscar el restaurante por ID
         const restaurant = await Restaurant.findById(restaurantId);
 
         if (!restaurant) {
             return res.status(404).json({ message: "Restaurante no encontrado" });
         }
 
+        // Añadir la nueva calificación
         restaurant.calificacion.calificaciones.push(rating);
 
+        // Calcular el nuevo promedio
         restaurant.calificacion.promedio = restaurant.calificacion.calificaciones.reduce((a, b) => a + b, 0) / restaurant.calificacion.calificaciones.length;
 
+        // Guardar el Restaurante actualizado
         await restaurant.save();
 
         res.json(restaurant);
@@ -193,6 +198,7 @@ const rateRestaurant = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
 
 module.exports = {
     registrarRestaurante,
