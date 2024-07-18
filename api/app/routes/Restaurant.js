@@ -1,8 +1,6 @@
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
 const router = express.Router();
-const { login } = require('../controllers/LoginRestaurant');
+const {login} = require('../controllers/LoginRestaurant');
 const {
     registrarRestaurante,
     obtenerRestaurantes,
@@ -13,8 +11,11 @@ const {
     actualizarEstatusRestaurante,
     rateRestaurant
 } = require('../controllers/Restaurant');
+const multerMiddleware = require('../middlewares/multerMiddleware');
 
-router.post('/restaurant', registrarRestaurante);
+router.post('/restaurant-login', login);
+
+router.post('/restaurant', multerMiddleware, registrarRestaurante);
 router.get('/restaurants', obtenerRestaurantes);
 router.get('/restaurant/:id', obtenerRestaurante);
 router.put('/restaurant/:id', actualizarPropiedadRestaurante);
@@ -22,21 +23,5 @@ router.put('/restaurant-suspender/:id', suspenderRestaurante);
 router.delete('/restaurant/:id', eliminarRestaurante);
 router.put('/restaurant-estatus/:id', actualizarEstatusRestaurante);
 router.post('/restaurant-calificar/:restaurantId', rateRestaurant);
-
-router.post('/restaurant-login', login);
-
-// Ruta para servir imágenes estáticas desde la carpeta de uploads
-router.use('/uploads', express.static('../app/uploads'));
-
-// Ruta para listar todos los archivos subidos en la carpeta de uploads
-router.get('/uploads/list', (req, res) => {
-    const uploadsDir = path.join(__dirname, '../app/uploads');
-    fs.readdir(uploadsDir, (err, files) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al leer la carpeta de uploads' });
-        }
-        res.status(200).json(files);
-    });
-});
 
 module.exports = router;

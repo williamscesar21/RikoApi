@@ -1,41 +1,56 @@
 // ../controllers/restaurant.js
 const Restaurant = require('../models/Restaurant');
 const multer = require('multer');
-const multerMiddleware = require('../middlewares/multerMiddleware');
+const { bucket } = require('../../../firebaseConfig'); // Importa el bucket de Firebase
 
 // Controlador para registrar un restaurante
 const registrarRestaurante = async (req, res) => {
     try {
-        // Middleware de Multer para subir los archivos de imagen (logo y foto del establecimiento)
         multerMiddleware(req, res, async (err) => {
             if (err instanceof multer.MulterError) {
-                // Un error de Multer ocurrió durante la carga
                 return res.status(400).json({ error: err.message });
             } else if (err) {
-                // Otro tipo de error ocurrió
                 return res.status(500).json({ error: err.message });
             }
 
-            // Extraer los datos del cuerpo de la solicitud y los archivos subidos
-            const { nombre, descripcion, ubicacion, telefono, email, password } = req.body;
-            const { logo, foto_establecimiento } = req.file ? req.file : {};
+            const { nombre, descripcion, ubicacion, telefono, email, password, horario_de_trabajo } = req.body;
+            const { logo, foto_establecimiento } = req.files || {};
 
-            // Extraer y parsear el horario de trabajo del cuerpo de la solicitud
-            const horario_de_trabajo = JSON.parse(req.body.horario_de_trabajo);
+            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || !horario_de_trabajo) {
+                return res.status(400).json({ error: 'Todos los campos son requeridos' });
+            }
 
-            // Construir los horarios de trabajo como objetos del tipo horarioSchema
-            const horarios = horario_de_trabajo.map(item => ({
+            const horarios = JSON.parse(horario_de_trabajo).map(item => ({
                 dia: item.dia,
                 inicio: item.inicio,
                 fin: item.fin
             }));
 
-            // Validar que todos los campos necesarios estén presentes
-            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password) {
-                return res.status(400).json({ error: 'Todos los campos son requeridos' });
-            }
+            const uploadToFirebase = async (file) => {
+                if (!file) return null;
+                
+                const blob = bucket.file(Date.now() + '-' + file.originalname);
+                const blobStream = blob.createWriteStream({
+                    metadata: {
+                        contentType: file.mimetype
+                    }
+                });
 
-            // Crear una instancia del restaurante con los datos proporcionados
+                return new Promise((resolve, reject) => {
+                    blobStream.on('error', err => reject(err));
+                    blobStream.on('finish', () => {
+                        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+                        resolve(publicUrl);
+                    });
+                    blobStream.end(file.buffer);
+                });
+            };
+
+            const logoUrl = await uploadToFirebase(logo[0]);
+            const fotoEstablecimientoUrl = await uploadToFirebase(foto_establecimiento[0]);
+
+            const hashedPassword = await Restaurant.encryptPassword(password);
+
             const restaurante = new Restaurant({
                 nombre,
                 descripcion,
@@ -43,69 +58,20 @@ const registrarRestaurante = async (req, res) => {
                 horario_de_trabajo: horarios,
                 telefono,
                 email,
-                password,
-                logo: logo ? { filename: logo.filename, contentType: logo.mimetype } : undefined,
-                foto_establecimiento: foto_establecimiento ? { filename: foto_establecimiento.filename, contentType: foto_establecimiento.mimetype } : undefined
+                password: hashedPassword,
+                images: [
+                    logoUrl ? { filename: logoUrl, contentType: logo[0].mimetype } : undefined,
+                    fotoEstablecimientoUrl ? { filename: fotoEstablecimientoUrl, contentType: foto_establecimiento[0].mimetype } : undefined
+                ].filter(Boolean)
             });
 
-            // Guardar el restaurante en la base de datos
             await restaurante.save();
-
             return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
         });
-
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
 };
-
-// EL JSON PARA CREAR RESTAURANTE ES DE LA SIGUIENTE FORMA:
-// {
-//     "nombre": "Jorge",
-//     "apellido": "Perez",
-//     "email": "jorge@perez",
-//     "password": "123456",
-//     "telefono": "1234567890",
-//     "location": "40.7128,-74.0060",
-//     "horario_de_trabajo": [
-//         {
-//             "dia": "Lunes",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Martes",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Miercoles",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },   
-//         {
-//             "dia": "Jueves",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Viernes",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Sabado",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         },
-//         {
-//             "dia": "Domingo",
-//             "inicio": "10:00:00",
-//             "fin": "22:00:00"
-//         }
-//     ]
-// }
-
 
 const obtenerRestaurantes = async (req, res) => {
     try {
@@ -177,20 +143,15 @@ const rateRestaurant = async (req, res) => {
     }
 
     try {
-        // Buscar el restaurante por ID
         const restaurant = await Restaurant.findById(restaurantId);
 
         if (!restaurant) {
             return res.status(404).json({ message: "Restaurante no encontrado" });
         }
 
-        // Añadir la nueva calificación
         restaurant.calificacion.calificaciones.push(rating);
-
-        // Calcular el nuevo promedio
         restaurant.calificacion.promedio = restaurant.calificacion.calificaciones.reduce((a, b) => a + b, 0) / restaurant.calificacion.calificaciones.length;
 
-        // Guardar el Restaurante actualizado
         await restaurant.save();
 
         res.json(restaurant);
@@ -198,7 +159,6 @@ const rateRestaurant = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 
 module.exports = {
     registrarRestaurante,
