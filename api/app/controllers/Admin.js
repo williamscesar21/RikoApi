@@ -11,6 +11,11 @@ const registrarAdmin = async (req, res) => {
     return res.status(201).json(admin);
 }
 
+const verAdmins = async (req, res) => {
+    const admins = await Admin.find();
+    return res.status(200).json(admins);
+}
+
 // EL JSON PARA CREAR ADMIN ES DE LA SIGUIENTE FORMA:
 // {
 //     "username": "admin",
@@ -23,4 +28,4 @@ const eliminarAdmin = async (req, res) => {
     return res.status(200).json(admin);
 }
 
-module.exports = { registrarAdmin, eliminarAdmin }
+module.exports = { registrarAdmin, eliminarAdmin, verAdmins }
