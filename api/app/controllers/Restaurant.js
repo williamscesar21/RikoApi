@@ -1,75 +1,59 @@
 // ../controllers/restaurant.js
 const Restaurant = require('../models/Restaurant');
-const multer = require('multer');
-const { bucket } = require('../../../firebaseConfig'); // Importa el bucket de Firebase
 
 // Controlador para registrar un restaurante
 const registrarRestaurante = async (req, res) => {
     try {
-        multerMiddleware(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
-                return res.status(400).json({ error: err.message });
-            } else if (err) {
-                return res.status(500).json({ error: err.message });
-            }
+        // Extraer los datos del cuerpo de la solicitud
+        const {
+            nombre,
+            descripcion,
+            calificaciones,
+            images,
+            ubicacion,
+            horario_de_trabajo,
+            menu,
+            telefono,
+            email,
+            password
+        } = req.body;
 
-            const { nombre, descripcion, ubicacion, telefono, email, password, horario_de_trabajo } = req.body;
-            const { logo, foto_establecimiento } = req.files || {};
+        // Validar si el restaurante ya existe con el mismo email o teléfono
+        const emailExistente = await Restaurant.findOne({ email });
+        if (emailExistente) {
+            return res.status(400).json({ message: 'El email ya está registrado' });
+        }
 
-            if (!nombre || !descripcion || !ubicacion || !telefono || !email || !password || !horario_de_trabajo) {
-                return res.status(400).json({ error: 'Todos los campos son requeridos' });
-            }
+        const telefonoExistente = await Restaurant.findOne({ telefono });
+        if (telefonoExistente) {
+            return res.status(400).json({ message: 'El teléfono ya está registrado' });
+        }
 
-            const horarios = JSON.parse(horario_de_trabajo).map(item => ({
-                dia: item.dia,
-                inicio: item.inicio,
-                fin: item.fin
-            }));
+        // Encriptar la contraseña
+        const contraseñaEncriptada = await Restaurant.encryptPassword(password);
 
-            const uploadToFirebase = async (file) => {
-                if (!file) return null;
-                
-                const blob = bucket.file(Date.now() + '-' + file.originalname);
-                const blobStream = blob.createWriteStream({
-                    metadata: {
-                        contentType: file.mimetype
-                    }
-                });
-
-                return new Promise((resolve, reject) => {
-                    blobStream.on('error', err => reject(err));
-                    blobStream.on('finish', () => {
-                        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-                        resolve(publicUrl);
-                    });
-                    blobStream.end(file.buffer);
-                });
-            };
-
-            const logoUrl = await uploadToFirebase(logo[0]);
-            const fotoEstablecimientoUrl = await uploadToFirebase(foto_establecimiento[0]);
-
-            const hashedPassword = await Restaurant.encryptPassword(password);
-
-            const restaurante = new Restaurant({
-                nombre,
-                descripcion,
-                ubicacion,
-                horario_de_trabajo: horarios,
-                telefono,
-                email,
-                password: hashedPassword,
-                images: [
-                    logoUrl ? { filename: logoUrl, contentType: logo[0].mimetype } : undefined,
-                    fotoEstablecimientoUrl ? { filename: fotoEstablecimientoUrl, contentType: foto_establecimiento[0].mimetype } : undefined
-                ].filter(Boolean)
-            });
-
-            await restaurante.save();
-            return res.status(201).json({ message: 'Restaurante registrado exitosamente', restaurante });
+        // Crear un nuevo documento de restaurante
+        const nuevoRestaurante = new Restaurant({
+            nombre,
+            descripcion,
+            calificacion: { calificaciones: calificaciones || [], promedio: 0 },
+            images,
+            ubicacion,
+            horario_de_trabajo,
+            menu,
+            telefono,
+            email,
+            password: contraseñaEncriptada
         });
+
+        // Guardar el restaurante en la base de datos
+        await nuevoRestaurante.save();
+
+        // Responder con el restaurante creado
+        res.status(201).json({ message: 'Restaurante registrado exitosamente', data: nuevoRestaurante });
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        console.error(error);
+        res.status(500).json({ message: 'Error al registrar el restaurante', error: error.message });
     }
 };
 

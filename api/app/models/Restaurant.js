@@ -56,10 +56,10 @@ const restaurantSchema = new Schema({
                 }
             }}
     },
-    images: [{
-        filename: String,
-        contentType: String
-    }],
+    images:{
+        type: [String],
+        default: []
+    },
     ubicacion: {
         type: String,
         required: true,
