@@ -11,11 +11,10 @@ const {
     actualizarEstatusRestaurante,
     rateRestaurant
 } = require('../controllers/Restaurant');
-const multerMiddleware = require('../middlewares/multerMiddleware');
 
 router.post('/restaurant-login', login);
 
-router.post('/restaurant', multerMiddleware, registrarRestaurante);
+router.post('/restaurant', registrarRestaurante);
 router.get('/restaurants', obtenerRestaurantes);
 router.get('/restaurant/:id', obtenerRestaurante);
 router.put('/restaurant/:id', actualizarPropiedadRestaurante);
