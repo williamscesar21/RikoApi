@@ -5,8 +5,8 @@ const jwt = require('jsonwebtoken');
 
 const login = async (req, res) => {
     try {
-        const { correo, password } = req.body;
-        const admin = await Admin.findOne({ correo: correo });
+        const { username, password } = req.body;
+        const admin = await Admin.findOne({ username: username });
         if (!admin) {
             return res.status(400).json({ message: "Usuario no encontrado" });
         }
