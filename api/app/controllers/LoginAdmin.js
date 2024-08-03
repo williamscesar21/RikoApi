@@ -17,6 +17,7 @@ const login = async (req, res) => {
         }
         const token = jwt.sign({ id: admin._id }, process.env.DB_KEY, { expiresIn: '1d' });
         res.json({ token: token, admin: admin });
+        console.log("Login exitoso");
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
