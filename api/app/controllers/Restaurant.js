@@ -144,6 +144,21 @@ const rateRestaurant = async (req, res) => {
     }
 };
 
+const updatePassword = async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+    const restaurante = await Restaurant.findById(id);
+
+    if (!restaurante) {
+        return res.status(404).json({ message: 'Restaurante no encontrado' });
+    }
+
+    const hashedPassword = await Restaurant.encryptPassword(password);
+    restaurante.password = hashedPassword;
+    await restaurante.save();
+    res.json(restaurante);
+};
+
 module.exports = {
     registrarRestaurante,
     obtenerRestaurantes,
@@ -152,5 +167,6 @@ module.exports = {
     suspenderRestaurante,
     eliminarRestaurante,
     actualizarEstatusRestaurante,
-    rateRestaurant
+    rateRestaurant,
+    updatePassword
 };

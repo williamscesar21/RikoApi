@@ -9,7 +9,8 @@ const {
     suspenderRestaurante,
     eliminarRestaurante,
     actualizarEstatusRestaurante,
-    rateRestaurant
+    rateRestaurant,
+    updatePassword
 } = require('../controllers/Restaurant');
 
 router.post('/restaurant-login', login);
@@ -22,5 +23,7 @@ router.put('/restaurant-suspender/:id', suspenderRestaurante);
 router.delete('/restaurant/:id', eliminarRestaurante);
 router.put('/restaurant-estatus/:id', actualizarEstatusRestaurante);
 router.post('/restaurant-calificar/:restaurantId', rateRestaurant);
+
+router.put('/restaurant-password/:id', updatePassword);
 
 module.exports = router;
