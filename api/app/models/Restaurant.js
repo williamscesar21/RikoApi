@@ -23,13 +23,7 @@ const restaurantSchema = new Schema({
         type: String,
         minlength: 1,
         maxlength: 100,
-        required: true,
-        validate: {
-            validator: function (v) {
-                return /^[a-zA-Z\s]+$/.test(v);
-            },
-            message: 'Nombre inválido',
-        }
+        required: true
     },
     descripcion: {
         type: String,
