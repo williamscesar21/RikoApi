@@ -1,26 +1,14 @@
 // ../controllers/Product.js
-const multerMiddleware = require('../middlewares/multerMiddleware');
 const Product = require('../models/Product');
 const Restaurant = require('../models/Restaurant');
 
 const crearProducto = async (req, res) => {
     try {
-        // Middleware de Multer para subir las imágenes del producto
-        multerMiddleware(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
-                // Un error de Multer ocurrió durante la carga
-                return res.status(400).json({ error: err.message });
-            } else if (err) {
-                // Otro tipo de error ocurrió
-                return res.status(500).json({ error: err.message });
-            }
-
             // Extraer los datos del cuerpo de la solicitud y las imágenes subidas
-            const { nombre, precio, descripcion, calificacion, id_restaurant, tags } = req.body;
-            const imagenes = req.files ? req.files.map(file => ({ filename: file.filename, contentType: file.mimetype })) : [];
+            const { nombre, precio, descripcion, calificaciones, id_restaurant, tags, images } = req.body;
 
             // Validar que todos los campos necesarios estén presentes
-            if (!nombre || !precio || !descripcion || !calificacion || !id_restaurant || !tags || tags.length === 0) {
+            if (!nombre || !precio || !descripcion || !id_restaurant || !tags || !images) {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
@@ -29,10 +17,10 @@ const crearProducto = async (req, res) => {
                 nombre,
                 precio,
                 descripcion,
-                calificacion,
+                calificacion: { calificaciones: calificaciones || [], promedio: 0 },
                 id_restaurant,
                 tags,
-                imagenes
+                images
             });
 
             // Guardar el producto en la base de datos
@@ -42,7 +30,7 @@ const crearProducto = async (req, res) => {
             await actualizarMenuRestaurante(id_restaurant, 'Producto', producto._id);
 
             return res.status(201).json({ message: 'Producto creado exitosamente', producto });
-        });
+        ;
 
     } catch (error) {
         return res.status(500).json({ error: error.message });

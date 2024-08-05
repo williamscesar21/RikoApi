@@ -14,10 +14,10 @@ const productSchema = new Schema({
         type: Number,
         required: true
     },
-    imagenes:[{
-        filename: String,
-        contentType: String
-    }],
+    images:{
+        type: [String],
+        default: []
+    },
     descripcion:{
         type: String,
         minlenght: 1,
