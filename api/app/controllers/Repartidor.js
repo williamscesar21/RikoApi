@@ -1,26 +1,13 @@
 // ../controllers/repartisdor.js
-
-const multerMiddleware = require('../middlewares/multerMiddleware');
 const Repartidor = require('../models/Repartidor');
 
 const registrarRepartidor = async (req, res) => {
     try {
-        // Middleware de Multer para subir los archivos necesarios (foto de perfil y foto del vehículo)
-        multerMiddleware(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
-                // Un error de Multer ocurrió durante la carga
-                return res.status(400).json({ error: err.message });
-            } else if (err) {
-                // Otro tipo de error ocurrió
-                return res.status(500).json({ error: err.message });
-            }
-
             // Extraer los datos del cuerpo de la solicitud y los archivos subidos
-            const { nombre, apellido, email, telefono, password, location, calificacion, vehiculo } = req.body;
-            const { foto_perfil, foto_vehiculo } = req.file ? req.file : {};
+            const { nombre, apellido, email, telefono, password, location, calificaciones, vehiculo, foto_perfil, foto_vehiculo } = req.body;
 
             // Validar que todos los campos necesarios estén presentes
-            if (!nombre || !apellido || !email || !telefono || !password || !location || !calificacion || !vehiculo.matricula || !vehiculo.marca || !vehiculo.modelo || !vehiculo.color) {
+            if (!nombre || !email || !password || !location || !vehiculo || !fotos_perfil || !fotos_vehiculo || telefono) {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
@@ -32,14 +19,14 @@ const registrarRepartidor = async (req, res) => {
                 telefono,
                 password: await Repartidor.encryptPassword(password),
                 location,
-                calificacion,
-                foto_perfil: foto_perfil ? { filename: foto_perfil.filename, contentType: foto_perfil.mimetype } : undefined,
+                calificacion: { calificaciones: calificaciones || [], promedio: 0 },
+                foto_perfil,
                 vehiculo: {
                     matricula: vehiculo.matricula,
                     marca: vehiculo.marca,
                     modelo: vehiculo.modelo,
                     color: vehiculo.color,
-                    foto_vehiculo: foto_vehiculo ? { filename: foto_vehiculo.filename, contentType: foto_vehiculo.mimetype } : undefined
+                    foto_vehiculo: foto_vehiculo
                 }
             });
 
@@ -50,7 +37,6 @@ const registrarRepartidor = async (req, res) => {
             await repartidor.save();
 
             return res.status(201).json({ message: 'Repartidor registrado exitosamente', repartidor });
-        });
 
     } catch (error) {
         return res.status(500).json({ error: error.message });
