@@ -124,6 +124,21 @@ const eliminarClient = async (req, res) => {
     }
 }
 
+const updatePassword = async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+    const cliente = await Client.findById(id);
+
+    if (!cliente) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+    }
+
+    const hashedPassword = await Client.encryptPassword(password);
+    cliente.password = hashedPassword;
+    await cliente.save();
+    res.json(cliente);
+};
+
 module.exports = {
     registrarClient,
     obtenerClients,
@@ -132,5 +147,6 @@ module.exports = {
     actualizarEstatusClient,
     actualizarLocationClient,
     suspenderClient,
-    eliminarClient
+    eliminarClient,
+    updatePassword
 }

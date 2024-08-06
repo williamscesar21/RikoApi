@@ -9,7 +9,8 @@ const {
     actualizarEstatusClient,
     actualizarLocationClient,
     suspenderClient,
-    eliminarClient
+    eliminarClient,
+    updatePassword
 } = require('../controllers/Client')
 
 router.post('/client-login', login)
@@ -21,5 +22,7 @@ router.put('/client-actualizar-estatus/:id', actualizarEstatusClient)
 router.put('/client-actualizar-location/:id', actualizarLocationClient)
 router.put('/client-suspender/:id', suspenderClient)
 router.delete('/client-eliminar/:id', eliminarClient)
+
+router.put('/client-password/:id', updatePassword)
 
 module.exports = router
