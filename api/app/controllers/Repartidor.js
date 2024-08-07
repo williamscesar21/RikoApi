@@ -157,6 +157,21 @@ const rateRepartidor = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+const updatePassword = async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+    const repartidor = await Repartidor.findById(id);
+
+    if (!repartidor) {
+        return res.status(404).json({ message: 'repartidor no encontrado' });
+    }
+
+    const hashedPassword = await Repartidor.encryptPassword(password);
+    repartidor.password = hashedPassword;
+    await repartidor.save();
+    res.json(repartidor);
+};
  
 module.exports = {
     registrarRepartidor,
@@ -166,5 +181,6 @@ module.exports = {
     eliminarRepartidor,
     suspenderRepartidor,
     actualizarLocationRepartidor,
-    rateRepartidor
+    rateRepartidor,
+    updatePassword
 };

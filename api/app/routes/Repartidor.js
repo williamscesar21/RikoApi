@@ -9,7 +9,8 @@ const {
     eliminarRepartidor,
     suspenderRepartidor,
     actualizarLocationRepartidor,
-    rateRepartidor
+    rateRepartidor,
+    updatePassword
 } = require('../controllers/Repartidor');
 
 router.post('/repartidor', registrarRepartidor);
@@ -20,6 +21,8 @@ router.delete('/repartidor/:id', eliminarRepartidor);
 router.put('/repartidor-suspender/:id', suspenderRepartidor);
 router.put('/repartidor-location/:id', actualizarLocationRepartidor);
 router.post('/repartidor-calificar/:repartidorId', rateRepartidor);
+
+router.put('/repartidor-password/:id', updatePassword);
 
 router.post('/repartidor-login', login);
 
