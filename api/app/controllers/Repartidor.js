@@ -7,7 +7,7 @@ const registrarRepartidor = async (req, res) => {
             const { nombre, apellido, email, telefono, password, location, calificaciones, vehiculo, foto_perfil, foto_vehiculo } = req.body;
 
             // Validar que todos los campos necesarios estén presentes
-            if (!nombre || !email || !password || !location || !vehiculo || !foto_perfil || telefono) {
+            if (!nombre || !email || !password || !foto_perfil || telefono) {
                 return res.status(400).json({ error: 'Todos los campos son requeridos' });
             }
 
