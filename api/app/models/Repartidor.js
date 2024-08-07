@@ -90,8 +90,7 @@ const repartidorSchema = new Schema({
             }}
     },
     foto_perfil:{
-            filename: String,
-            contentType: String
+            type: String
         },
     vehiculo:{
         matricula: {
@@ -118,8 +117,7 @@ const repartidorSchema = new Schema({
             required: true
         },
         foto_vehiculo: {
-            filename: String,
-            contentType: String
+            type: String
         }
     },
     estatus:{
