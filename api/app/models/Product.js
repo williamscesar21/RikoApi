@@ -42,16 +42,14 @@ const productSchema = new Schema({
         ref: 'Restaurant'
     },
     tags:{
-        type:[{
-            type: String,
-            enum: ['Desayuno', 'ALmuerzo', 'Cena', 'Bebida', 'Postre', 'Comida Rapida', 'Comida Gourmet', 'Nutricional']
-        }],
+        type:[String],
         validate:{
             validator: function (v) {
                 return v.length <= 3; // Validar que no haya más de 3 tags seleccionados
             },
             message: 'No se pueden seleccionar más de 3 tags'
-        }
+        },
+        default: []
     },
     estatus:{
         type: String,
