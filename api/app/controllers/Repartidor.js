@@ -3,41 +3,34 @@ const Repartidor = require('../models/Repartidor');
 
 const registrarRepartidor = async (req, res) => {
     try {
-            // Extraer los datos del cuerpo de la solicitud y los archivos subidos
-            const { nombre, apellido, email, telefono, password, location, calificaciones, vehiculo, foto_perfil, foto_vehiculo } = req.body;
+        const { nombre, apellido, email, telefono, password, location, calificaciones, vehiculo, foto_perfil, foto_vehiculo } = req.body;
 
-            // Validar que todos los campos necesarios estén presentes
-            if (!nombre || !email || !password || !foto_perfil || telefono) {
-                return res.status(400).json({ error: 'Todos los campos son requeridos' });
+        // Validar que todos los campos necesarios estén presentes
+        if (!nombre || !apellido || !email || !password || !telefono || foto_perfil.length === 0) {
+            return res.status(400).json({ error: 'Todos los campos son requeridos' });
+        }
+
+        const repartidor = await Repartidor.create({
+            nombre,
+            apellido,
+            email,
+            telefono,
+            password: await Repartidor.encryptPassword(password),
+            location,
+            calificacion: { calificaciones: calificaciones || [], promedio: 0 },
+            foto_perfil,
+            vehiculo: {
+                matricula: vehiculo.matricula,
+                marca: vehiculo.marca,
+                modelo: vehiculo.modelo,
+                color: vehiculo.color,
+                foto_vehiculo
             }
+        });
 
-            // Crear una instancia del repartidor con los datos proporcionados
-            const repartidor = await Repartidor.create({
-                nombre,
-                apellido,
-                email,
-                telefono,
-                password: await Repartidor.encryptPassword(password),
-                location,
-                calificacion: { calificaciones: calificaciones || [], promedio: 0 },
-                foto_perfil,
-                vehiculo: {
-                    matricula: vehiculo.matricula,
-                    marca: vehiculo.marca,
-                    modelo: vehiculo.modelo,
-                    color: vehiculo.color,
-                    foto_vehiculo: foto_vehiculo
-                }
-            });
+        await repartidor.save();
 
-            // Encriptar la contraseña antes de guardarla en la base de datos
-            repartidor.password = await Repartidor.encryptPassword(repartidor.password);
-
-            // Guardar el repartidor en la base de datos
-            await repartidor.save();
-
-            return res.status(201).json({ message: 'Repartidor registrado exitosamente', repartidor });
-
+        return res.status(201).json({ message: 'Repartidor registrado exitosamente', repartidor });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
