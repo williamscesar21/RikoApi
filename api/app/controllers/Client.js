@@ -14,7 +14,7 @@ const registrarClient = async (req, res) => {
         await client.save();
         const wallet = new Wallet({ user: client._id, userType: 'Client' });
         await wallet.save();
-        const cart = new Cart({ user: client._id });
+        const cart = new Cart({ id_client: client._id });
         await cart.save();
         return res.status(201).json(client);
     }catch (error) {
