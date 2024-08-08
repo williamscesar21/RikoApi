@@ -45,12 +45,13 @@ const addItemToCart = async (req, res) => {
             cart.items.push({ product: productId, quantity });
         }
 
-        await cart.calculateTotal();
+        await cart.calculateTotal(); // Calcula el total después de las modificaciones
         res.json(cart);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
 
 // Eliminar un producto del carrito
 const removeItemFromCart = async (req, res) => {

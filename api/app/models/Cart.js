@@ -31,19 +31,21 @@ const cartSchema = new Schema({
 });
 
 // Método para calcular el total del carrito
-cartSchema.methods.calculateTotal = function() {
-    // Inicializar total
+cartSchema.methods.calculateTotal = async function() {
     let total = 0;
 
-    // Iterar sobre los items del carrito
-    this.items.forEach(item => {
-        total += item.product.precio * item.quantity; // Asumiendo que `precio` es el precio del producto
-    });
+    for (let item of this.items) {
+        // Cargar el producto asociado al item del carrito
+        const product = await mongoose.model('Product').findById(item.product).exec();
+        
+        if (product && product.precio) {
+            total += product.precio * item.quantity;
+        } else {
+            throw new Error(`Producto no válido o sin precio: ${item.product}`);
+        }
+    }
 
-    // Asignar el total calculado al campo total del carrito
     this.total = total;
-
-    // Guardar el carrito
     return this.save();
 };
 
