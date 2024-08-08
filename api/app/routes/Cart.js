@@ -7,7 +7,7 @@ const {
     updateItemQuantity
 } = require('../controllers/Cart');
 
-router.get('/cart', getCart);
+router.get('/cart/:client', getCart);
 router.post('/add', addItemToCart);
 router.post('/cart/remove', removeItemFromCart);
 router.put('/cart/update', updateItemQuantity);
