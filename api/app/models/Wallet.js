@@ -2,6 +2,28 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+const transactionSchema = new Schema({
+    user: {
+        type: Schema.Types.ObjectId,
+        required: true,
+        refPath: 'userType' // Referencia dinámica basada en el tipo de usuario
+    },
+    amount: {
+        type: Number,
+        default: 0
+    },
+    description: {
+        type: String
+    },
+    type: {
+        type: String,
+        enum: ['Pago', 'Retiro', 'Cobro']
+    }
+},{
+    timestamps: true,
+    versionKey: false
+});
+
 const walletSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
@@ -16,7 +38,8 @@ const walletSchema = new Schema({
     balance: {
         type: Number,
         default: 0
-    }
+    },
+    transactions: [transactionSchema]
 },{
     timestamps: true,
     versionKey: false
