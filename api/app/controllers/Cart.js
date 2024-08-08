@@ -6,7 +6,7 @@ const Product = require('../models/Product');
 // Obtener el carrito del cliente
 const getCart = async (req, res) => {
     try {
-        const cart = await Cart.findOne({ id_client: req.client.id }).populate('items.product');
+        const cart = await Cart.findOne({ id_client: req.client._id }).populate('items.product');
 
         if (!cart) {
             return res.status(404).json({ message: "Carrito no encontrado" });
