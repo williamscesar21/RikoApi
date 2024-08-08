@@ -20,7 +20,7 @@ const getCart = async (req, res) => {
 
 // Añadir un producto al carrito
 const addItemToCart = async (req, res) => {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, client } = req.body;
 
     try {
         const product = await Product.findById(productId);
@@ -29,10 +29,12 @@ const addItemToCart = async (req, res) => {
             return res.status(404).json({ message: "Producto no encontrado" });
         }
 
-        let cart = await Cart.findOne({ id_client: req.client.id });
+        let id_client = client._id;
+
+        let cart = await Cart.findOne({ id_client: id_client });
 
         if (!cart) {
-            cart = new Cart({ id_client: req.client.id, items: [] });
+            cart = new Cart({ id_client: id_client, items: [] });
         }
 
         const cartItem = cart.items.find(item => item.product.toString() === productId);
