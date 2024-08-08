@@ -1,5 +1,6 @@
 // ../controllers/repartisdor.js
 const Repartidor = require('../models/Repartidor');
+const Wallet = require('../models/Wallet');
 
 const registrarRepartidor = async (req, res) => {
     try {
@@ -29,6 +30,8 @@ const registrarRepartidor = async (req, res) => {
         });
 
         await repartidor.save();
+        const wallet = new Wallet({ user: repartidor._id, userType: 'Repartidor' });
+        await wallet.save();
 
         return res.status(201).json({ message: 'Repartidor registrado exitosamente', repartidor });
     } catch (error) {

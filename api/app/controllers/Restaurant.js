@@ -1,5 +1,6 @@
 // ../controllers/restaurant.js
 const Restaurant = require('../models/Restaurant');
+const Wallet = require('../models/Wallet');
 
 // Controlador para registrar un restaurante
 const registrarRestaurante = async (req, res) => {
@@ -48,6 +49,8 @@ const registrarRestaurante = async (req, res) => {
 
         // Guardar el restaurante en la base de datos
         await nuevoRestaurante.save();
+        const wallet = new Wallet({ user: nuevoRestaurante._id, userType: 'Restaurant' });
+        await wallet.save();
 
         // Responder con el restaurante creado
         res.status(201).json({ message: 'Restaurante registrado exitosamente', data: nuevoRestaurante });
