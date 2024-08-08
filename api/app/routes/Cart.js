@@ -8,7 +8,7 @@ const {
 } = require('../controllers/Cart');
 
 router.get('/cart', getCart);
-router.post('/cart/add', addItemToCart);
+router.post('/add', addItemToCart);
 router.post('/cart/remove', removeItemFromCart);
 router.put('/cart/update', updateItemQuantity);
 
