@@ -56,8 +56,8 @@ const addItemToCart = async (req, res) => {
 
 // Eliminar un producto del carrito
 const removeItemFromCart = async (req, res) => {
+    const { productId } = req.body;
     try {
-        const { productId } = req.params;
         let cart = await Cart.findOne({ id_client: productId });
 
         if (!cart) {
