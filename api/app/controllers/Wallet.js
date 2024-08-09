@@ -5,6 +5,16 @@ const Client = require('../models/Client');
 const Restaurant = require('../models/Restaurant');
 const Repartidor = require('../models/Repartidor');
 
+//Obtener todas las wallets
+const getWallets = async (req, res) => {
+    try {
+        const wallets = await Wallet.find();
+        res.json(wallets);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Crear una nueva wallet
 const createWallet = async (req, res) => {
     const { user, userType } = req.body;
